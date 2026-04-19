@@ -2,152 +2,248 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rychlý Pacientský Zápisník</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ff9f43">
+    <title>Deník Zdraví AI Pro</title>
     <style>
-        :root { --p: #3498db; --bg: #f0f2f5; --danger: #e74c3c; --success: #2ecc71; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 500px; }
-
-        .controls { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        :root {
+            --bg: #1e2124; --box-bg: #1e2124; --light-shadow: #2a2e33; --dark-shadow: #121416;
+            --accent: #ff9f43; --text-main: #ffffff; --border-amber: rgba(255, 159, 67, 0.4); --danger: #ff4d4d; --whatsapp: #25d366;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 12px; font-weight: 600; }
+        .container { width: 100%; max-width: 450px; margin: auto; }
         
-        /* Styl pro rychlá tlačítka jmen */
-        .quick-names { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center; }
-        .name-tag { 
-            background: #e1e8ed; border: none; padding: 8px 15px; border-radius: 20px; 
-            cursor: pointer; font-size: 14px; font-weight: bold; color: #2c3e50; transition: 0.2s;
-        }
-        .name-tag:hover { background: var(--p); color: white; }
-        .name-tag.active { background: var(--p); color: white; border: 2px solid #2980b9; }
+        /* Tlačítko nahrávání */
+        .ai-mic-btn { width: 100%; background: var(--accent); color: var(--bg); font-weight: 900; border-radius: 15px; padding: 18px; text-align: center; margin-bottom: 20px; cursor: pointer; border: none; font-size: 14px; transition: 0.3s; }
+        .recording { animation: pulse 1.5s infinite; background: var(--danger) !important; color: white !important; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 77, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); } }
 
-        input#patient-name { 
-            width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; 
-            margin-bottom: 15px; font-size: 16px; box-sizing: border-box; text-align: center;
-        }
+        /* Boxy a vstupy */
+        .neu-box { background: var(--box-bg); border-radius: 20px; padding: 15px; box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow); border: 1px solid var(--border-amber); margin-bottom: 20px; }
+        input, select, textarea { width: 100%; border: 1px solid var(--border-amber); background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 10px; font-size: 16px; color: var(--text-main); font-weight: 700; font-family: inherit; }
+        .btn { background: var(--bg); border: 2px solid var(--border-amber); border-radius: 12px; padding: 15px; font-weight: 900; color: var(--accent); text-align: center; cursor: pointer; width: 100%; display: block; margin-bottom: 10px; text-decoration: none; }
+        
+        /* Karty záznamů */
+        .entry { background: var(--box-bg); padding: 15px; border-radius: 18px; margin-bottom: 12px; box-shadow: 4px 4px 10px var(--dark-shadow); position: relative; border-left: 5px solid var(--accent); }
+        .edit-pen { position: absolute; top: 12px; right: 12px; font-size: 18px; color: var(--accent); cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: var(--light-shadow); border-radius: 50%; }
 
-        #mic-btn { 
-            background: var(--danger); color: white; border: none; width: 80px; height: 80px; 
-            border-radius: 50%; font-size: 30px; cursor: pointer; transition: 0.3s; margin: 0 auto;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #mic-btn.recording { background: var(--success); transform: scale(1.1); box-shadow: 0 0 15px rgba(46, 204, 113, 0.5); }
-
-        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 6px solid var(--p); position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .card input { width: 100%; border: none; font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #2c3e50; }
-        .card textarea { width: 100%; border: 1px solid #f0f0f0; border-radius: 8px; padding: 8px; font-size: 14px; font-family: inherit; resize: none; }
-        .del-btn { position: absolute; top: 10px; right: 10px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 18px; }
+        /* Modální okno */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
+        .modal-content { background: var(--bg); margin: 15% auto; padding: 20px; width: 90%; max-width: 400px; border-radius: 25px; border: 2px solid var(--accent); }
+        
+        .tags-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
+        .tag { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: 15px; border: 2px solid transparent; cursor: pointer; background: var(--light-shadow); }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="controls">
-        <label style="font-size: 12px; font-weight: bold; color: var(--p); display: block; margin-bottom: 8px;">RYCHLÝ VÝBĚR PACIENTA:</label>
-        <div id="quick-names-list" class="quick-names">
-            </div>
-        
-        <input type="text" id="patient-name" placeholder="Nebo napište jméno...">
-        
-        <button id="mic-btn">🎤</button>
-        <div id="status" style="margin-top:10px; font-size: 13px; font-weight: bold; color: #666;">Vyberte jméno a diktujte</div>
+    <h2 style="color:var(--accent); text-align:center;">🩺 Zdraví AI Pro</h2>
+
+    <button class="ai-mic-btn" id="ai-mic" onclick="startSmartVoice()">
+        <span id="mic-label">🎙️ NADIKTOVAT CELÝ ZÁZNAM</span>
+    </button>
+
+    <div class="neu-box">
+        <div class="tags-grid" id="tags-area"></div>
+        <select id="person-select"></select>
+        <div style="display: flex; gap: 8px;">
+            <input type="date" id="date-input" style="flex: 1.2;">
+            <input type="time" id="time-input" style="flex: 0.8;">
+        </div>
+        <input type="text" id="doctor-input" placeholder="Lékař">
+        <input type="text" id="note-input" placeholder="Poznámka">
+        <input type="hidden" id="color-input" value="#ff9f43">
+        <div class="btn" onclick="saveEntry()">Uložit záznam</div>
     </div>
 
-    <div id="notes-list"></div>
+    <div id="main-list"></div>
+
+    <div class="btn" onclick="toggleSettings()" style="font-size:10px; margin-top:30px;">⚙️ Nastavení a záloha</div>
+    <div id="settings-section" class="neu-box hidden">
+        <input type="text" id="p1-name" placeholder="Jméno 1">
+        <input type="text" id="p2-name" placeholder="Jméno 2">
+        <div class="btn" onclick="updateNames()">Uložit jména</div>
+        <div class="btn" onclick="exportToFile()" style="color:var(--whatsapp)">📤 Záloha / Sdílet</div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:var(--accent); margin-top:0;">Upravit záznam</h3>
+        <label style="font-size: 10px; color: var(--accent);">PACIENT / LÉKAŘ</label>
+        <input type="text" id="edit-person">
+        <input type="text" id="edit-doctor">
+        <label style="font-size: 10px; color: var(--accent);">POZNÁMKA</label>
+        <textarea id="edit-note" rows="4"></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="deleteEntry()">Smazat</button>
+            <button class="btn" onclick="updateEntry()">Uložit</button>
+        </div>
+        <button class="btn" style="border:none; font-size:12px;" onclick="closeModal()">Zavřít</button>
+    </div>
 </div>
 
 <script>
-    const nameInput = document.getElementById('patient-name');
-    const quickNamesDiv = document.getElementById('quick-names-list');
-    const micBtn = document.getElementById('mic-btn');
-    const list = document.getElementById('notes-list');
+    const months = ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"];
+    let currentEditId = null;
 
-    // Seznam jmen pro rychlý výběr (můžeš si je tu upravit)
-    let configNames = ["Jan Novák", "Marie Černá", "Petr Svoboda", "Jana Novotná", "Karel Dvořák"];
-    let records = JSON.parse(localStorage.getItem('med_fast_v1') || '[]');
-    let isRecording = false;
-
-    // Funkce pro vykreslení rychlých tlačítek
-    function renderQuickNames() {
-        quickNamesDiv.innerHTML = configNames.map(name => `
-            <button class="name-tag" onclick="selectName('${name}')">${name}</button>
-        `).join('');
+    function initApp() {
+        if(!localStorage.getItem('docs_data')) {
+            localStorage.setItem('docs_data', JSON.stringify([
+                {name: "Zubař", icon: "🦷", color: "#e74c3c"},
+                {name: "Oční", icon: "👁️", color: "#3498db"},
+                {name: "Obvodní", icon: "🏥", color: "#25d366"},
+                {name: "Krev", icon: "💉", color: "#f1c40f"}
+            ]));
+        }
+        renderTags(); renderList(); loadSettings();
+        document.getElementById('date-input').valueAsDate = new Date();
     }
 
-    function selectName(name) {
-        nameInput.value = name;
-        // Vizuální zpětná vazba
-        document.querySelectorAll('.name-tag').forEach(btn => {
-            btn.classList.toggle('active', btn.innerText === name);
+    // --- HLASOVÉ FUNKCE ---
+    function startSmartVoice() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'cs-CZ';
+        recognition.onstart = () => {
+            document.getElementById('ai-mic').classList.add('recording');
+            document.getElementById('mic-label').innerText = "🛑 POSLOUCHÁM...";
+        };
+        recognition.onresult = (event) => { processAIText(event.results[0][0].transcript.toLowerCase()); };
+        recognition.onend = () => {
+            document.getElementById('ai-mic').classList.remove('recording');
+            document.getElementById('mic-label').innerText = "🎙️ NADIKTOVAT CELÝ ZÁZNAM";
+        };
+        recognition.start();
+    }
+
+    function processAIText(text) {
+        const p1 = document.getElementById('p1-name').value.toLowerCase();
+        const p2 = document.getElementById('p2-name').value.toLowerCase();
+        if (text.includes(p1)) document.getElementById('person-select').value = document.getElementById('p1-name').value;
+        else if (text.includes(p2)) document.getElementById('person-select').value = document.getElementById('p2-name').value;
+        
+        let d = new Date();
+        months.forEach((m, i) => {
+            if (text.includes(m)) {
+                const dayMatch = text.match(new RegExp(`(\\d{1,2})\\.?\\s*${m}`));
+                if (dayMatch) { d.setDate(dayMatch[1]); d.setMonth(i); }
+            }
+        });
+        document.getElementById('date-input').value = d.toISOString().split('T')[0];
+        document.getElementById('note-input').value = text;
+        
+        JSON.parse(localStorage.getItem('docs_data')).forEach(doc => {
+            if (text.includes(doc.name.toLowerCase())) {
+                document.getElementById('doctor-input').value = doc.name;
+                document.getElementById('color-input').value = doc.color;
+            }
         });
     }
 
-    // Hlasová logika
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
-        const recognition = new SpeechRec();
-        recognition.lang = 'cs-CZ';
-
-        micBtn.onclick = () => {
-            if (!nameInput.value) { alert("Vyberte jméno!"); return; }
-            if (!isRecording) recognition.start();
-            else recognition.stop();
-        };
-
-        recognition.onstart = () => {
-            isRecording = true;
-            micBtn.classList.add('recording');
-            micBtn.innerHTML = "⏹️";
-        };
-
-        recognition.onresult = (e) => {
-            const text = e.results[0][0].transcript;
-            addRecord(nameInput.value, text);
-        };
-
-        recognition.onend = () => {
-            isRecording = false;
-            micBtn.classList.remove('recording');
-            micBtn.innerHTML = "🎤";
-            nameInput.value = ""; 
-            document.querySelectorAll('.name-tag').forEach(b => b.classList.remove('active'));
-        };
+    // --- CRUD FUNKCE (Ukládání, Mazání, Editace) ---
+    function saveEntry() {
+        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+        entries.push({
+            id: Date.now(),
+            person: document.getElementById('person-select').value,
+            date: document.getElementById('date-input').value,
+            time: document.getElementById('time-input').value,
+            doctor: document.getElementById('doctor-input').value || "Obecné",
+            note: document.getElementById('note-input').value,
+            color: document.getElementById('color-input').value
+        });
+        localStorage.setItem('health_entries', JSON.stringify(entries));
+        document.getElementById('note-input').value = "";
+        renderList();
     }
 
-    function addRecord(name, data) {
-        const entry = { id: Date.now(), name, data, time: new Date().toLocaleString('cs-CZ') };
-        records.unshift(entry);
-        save();
+    function renderList() {
+        const container = document.getElementById('main-list');
+        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+        container.innerHTML = '';
+        entries.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
+            const div = document.createElement('div'); div.className = 'entry'; div.style.borderLeftColor = e.color;
+            div.innerHTML = `
+                <div class="edit-pen" onclick="openModal(${e.id})">✎</div>
+                <div style="font-size:10px; opacity:0.6">${e.person} • ${e.date}</div>
+                <div style="font-size:16px; font-weight:900; color:var(--accent)">${e.doctor}</div>
+                <div style="font-size:14px;">${e.note}</div>`;
+            container.appendChild(div);
+        });
     }
 
-    function update(id, field, val) {
-        records = records.map(r => r.id === id ? {...r, [field]: val} : r);
-        localStorage.setItem('med_fast_v1', JSON.stringify(records));
+    // --- MODÁLNÍ OKNO ---
+    function openModal(id) {
+        currentEditId = id;
+        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+        const entry = entries.find(e => e.id === id);
+        document.getElementById('edit-person').value = entry.person;
+        document.getElementById('edit-doctor').value = entry.doctor;
+        document.getElementById('edit-note').value = entry.note;
+        document.getElementById('editModal').style.display = "block";
     }
 
-    function del(id) {
-        records = records.filter(r => r.id !== id);
-        save();
+    function closeModal() { document.getElementById('editModal').style.display = "none"; }
+
+    function updateEntry() {
+        let entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+        entries = entries.map(e => e.id === currentEditId ? {
+            ...e, 
+            person: document.getElementById('edit-person').value,
+            doctor: document.getElementById('edit-doctor').value,
+            note: document.getElementById('edit-note').value
+        } : e);
+        localStorage.setItem('health_entries', JSON.stringify(entries));
+        renderList(); closeModal();
     }
 
-    function save() {
-        localStorage.setItem('med_fast_v1', JSON.stringify(records));
-        render();
+    function deleteEntry() {
+        if (confirm("Opravdu smazat tento záznam?")) {
+            let entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+            entries = entries.filter(e => e.id !== currentEditId);
+            localStorage.setItem('health_entries', JSON.stringify(entries));
+            renderList(); closeModal();
+        }
     }
 
-    function render() {
-        list.innerHTML = records.map(r => `
-            <div class="card">
-                <button class="del-btn" onclick="del(${r.id})">✕</button>
-                <input type="text" value="${r.name}" oninput="update(${r.id}, 'name', this.value)">
-                <textarea oninput="update(${r.id}, 'data', this.value)">${r.data}</textarea>
-                <div style="font-size:10px; color:#aaa; margin-top:5px;">${r.time}</div>
-            </div>
-        `).join('');
+    // --- NASTAVENÍ ---
+    function renderTags() {
+        const area = document.getElementById('tags-area');
+        JSON.parse(localStorage.getItem('docs_data')).forEach(doc => {
+            const t = document.createElement('div'); t.className = 'tag'; t.style.borderColor = doc.color;
+            t.innerHTML = `<span>${doc.icon}</span><div style="font-size:8px;">${doc.name}</div>`;
+            t.onclick = () => { document.getElementById('doctor-input').value = doc.name; document.getElementById('color-input').value = doc.color; };
+            area.appendChild(t);
+        });
     }
 
-    renderQuickNames();
-    render();
+    function loadSettings() {
+        const n = JSON.parse(localStorage.getItem('app_names') || '["Jana", "Petr"]');
+        document.getElementById('p1-name').value = n[0]; document.getElementById('p2-name').value = n[1];
+        document.getElementById('person-select').innerHTML = `<option>${n[0]}</option><option>${n[1]}</option>`;
+    }
+
+    function updateNames() {
+        localStorage.setItem('app_names', JSON.stringify([document.getElementById('p1-name').value, document.getElementById('p2-name').value]));
+        location.reload();
+    }
+
+    function toggleSettings() { document.getElementById('settings-section').classList.toggle('hidden'); }
+
+    async function exportToFile() {
+        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+        const text = entries.map(e => `${e.date} - ${e.person} - ${e.doctor}: ${e.note}`).join('\n');
+        if (navigator.share) {
+            navigator.share({ title: 'Můj Deník Zdraví', text: text });
+        } else {
+            alert("Sdílení není v tomto prohlížeči podporováno. Zkopírujte text ručně.");
+        }
+    }
+
+    initApp();
 </script>
-
 </body>
 </html>
