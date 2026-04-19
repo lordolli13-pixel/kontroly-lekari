@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chytrý Lékařský Zápisník</title>
+    <title>Lékařský Zápisník - Oprava data</title>
     <style>
-        :root { --p: #007bff; --bg: #f4f7f6; --danger: #e74c3c; --success: #2ecc71; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        :root { --p: #007bff; --bg: #f0f4f8; --danger: #e74c3c; --success: #2ecc71; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .app-container { width: 100%; max-width: 500px; }
         
-        .controls { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; border: 2px solid #eee; }
+        .controls { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
         
         #mic-btn { 
             background: var(--danger); color: white; border: none; 
@@ -17,20 +17,19 @@
             cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; margin: 0 auto;
         }
         
-        #mic-btn.recording { background: var(--success); transform: scale(1.1); box-shadow: 0 0 20px rgba(46, 204, 113, 0.4); }
+        #mic-btn.recording { background: var(--success); box-shadow: 0 0 20px rgba(46, 204, 113, 0.5); transform: scale(1.05); }
 
-        #status { margin-top: 15px; font-size: 0.9rem; color: #666; line-height: 1.4; }
-        .hint { font-size: 0.75rem; color: #999; margin-top: 5px; }
+        #status { margin-top: 15px; font-weight: 600; color: #444; min-height: 40px; font-size: 0.9rem; }
 
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-top: 4px solid var(--p); position: relative; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { background: white; padding: 18px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 6px solid var(--p); position: relative; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .full { grid-column: span 2; }
         
-        label { display: block; font-size: 10px; font-weight: bold; color: var(--p); text-transform: uppercase; margin-top: 10px; }
-        input { width: 100%; border: 1px solid #ddd; padding: 8px; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #fdfdfd; }
+        label { display: block; font-size: 11px; font-weight: bold; color: var(--p); text-transform: uppercase; margin-bottom: 4px; }
+        input { width: 100%; border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-size: 15px; box-sizing: border-box; background: #fafafa; }
         input:focus { border-color: var(--p); outline: none; background: #fff; }
         
-        .btn-delete { position: absolute; top: 10px; right: 10px; border: none; background: none; color: #eee; font-size: 18px; cursor: pointer; }
+        .btn-delete { position: absolute; top: 10px; right: 10px; border: none; background: none; color: #ccc; font-size: 20px; cursor: pointer; }
         .btn-delete:hover { color: var(--danger); }
     </style>
 </head>
@@ -39,8 +38,7 @@
 <div class="app-container">
     <div class="controls">
         <button id="mic-btn">🎤</button>
-        <div id="status">Klepni a řekni např.:<br><b>"Jan Novák doktor Svoboda 12. března v 15:30 kontrola krve"</b></div>
-        <div class="hint">Tlačítkem nahrávání spustíš i zastavíš.</div>
+        <div id="status">Klepni a řekni např.:<br>"Petr Malý doktor Novák 20. 5. ve 14:00 kontrola"</div>
     </div>
 
     <div id="list"></div>
@@ -51,7 +49,7 @@
     const status = document.getElementById('status');
     const list = document.getElementById('list');
 
-    let appointments = JSON.parse(localStorage.getItem('med_table_data') || '[]');
+    let appointments = JSON.parse(localStorage.getItem('med_v3_data') || '[]');
     let isRecording = false;
 
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -59,7 +57,6 @@
     if (SpeechRec) {
         const recognition = new SpeechRec();
         recognition.lang = 'cs-CZ';
-        recognition.continuous = false;
 
         micBtn.onclick = () => {
             if (!isRecording) recognition.start();
@@ -70,55 +67,61 @@
             isRecording = true;
             micBtn.classList.add('recording');
             micBtn.innerHTML = "⏹️";
-            status.innerText = "Teď mluvte...";
+            status.innerText = "Poslouchám... Mluvte přirozeně.";
         };
 
         recognition.onresult = (e) => {
             const text = e.results[0][0].transcript;
-            processSmartData(text);
+            status.innerText = "Zpracovávám: " + text;
+            processData(text);
         };
 
         recognition.onend = () => {
             isRecording = false;
             micBtn.classList.remove('recording');
             micBtn.innerHTML = "🎤";
-            status.innerHTML = "Uloženo. Klepni pro další zadání.";
         };
     }
 
-    function processSmartData(text) {
-        // Pomocná logika pro rozdělení textu
+    function processData(text) {
         const lowerText = text.toLowerCase();
-        
-        // 1. Hledání ČASU (např. 15:30 nebo 15 hodin)
-        const timeMatch = text.match(/(\d{1,2}[:\.]\d{2})/) || text.match(/(\d{1,2})\s*(hodin|hod)/);
+
+        // --- LEPŠÍ HLEDÁNÍ DATUMU ---
+        // Hledá vzory: "12.5.", "12. 5.", "12. května", "12. 10. 2024"
+        const dateRegex = /(\d{1,2}\.\s?(\d{1,2}\.?|[a-záíěéúů]{3,}))/i;
+        const dateMatch = text.match(dateRegex);
+        const foundDate = dateMatch ? dateMatch[0].trim() : "";
+
+        // --- HLEDÁNÍ ČASU ---
+        // Hledá vzory: "15:30", "15.30", "v 10 hodin"
+        const timeRegex = /(\d{1,2}[:\.]\d{2})/;
+        const timeMatch = text.match(timeRegex);
         const foundTime = timeMatch ? timeMatch[1].replace('.', ':') : "";
 
-        // 2. Hledání DATUMU (např. 12.5. nebo 12. května)
-        const dateMatch = text.match(/(\d{1,2}\.\s?(\d{1,2}\.|[a-záíěéúů]{3,}))/i);
-        const foundDate = dateMatch ? dateMatch[0] : "";
-
-        // 3. Hledání LÉKAŘE (pokud řekneš "doktor", "mudr" nebo "lékař")
+        // --- HLEDÁNÍ LÉKAŘE ---
         let doctor = "";
-        const docKeywords = ["doktor", "doktorka", "mudr", "lékař", "u doktora"];
-        docKeywords.forEach(kw => {
+        const docKeywords = ["doktor", "doktorka", "lékař", "mudr"];
+        for (let kw of docKeywords) {
             if (lowerText.includes(kw)) {
                 const parts = text.split(new RegExp(kw, 'i'));
-                if (parts[1]) doctor = parts[1].trim().split(' ')[0]; // Vezme první slovo za klíčem
+                if (parts[1]) doctor = parts[1].trim().split(' ')[0]; 
+                break;
             }
-        });
+        }
 
-        // 4. JMÉNO (předpokládáme, že první dvě slova jsou jméno, pokud to není datum)
+        // --- JMÉNO ---
+        // První dvě slova, pokud to není datum
         const words = text.split(' ');
-        const name = (words[0] + " " + (words[1] || "")).trim();
+        let name = words[0];
+        if (words[1] && !words[1].includes('.')) name += " " + words[1];
 
         const entry = {
             id: Date.now(),
             name: name,
-            doctor: doctor || "Neuvedeno",
+            doctor: doctor || "",
             date: foundDate,
             time: foundTime,
-            note: text // Celý text pro jistotu do poznámky
+            note: text
         };
 
         appointments.unshift(entry);
@@ -127,7 +130,7 @@
 
     function update(id, field, value) {
         appointments = appointments.map(a => a.id === id ? {...a, [field]: value} : a);
-        localStorage.setItem('med_table_data', JSON.stringify(appointments));
+        localStorage.setItem('med_v3_data', JSON.stringify(appointments));
     }
 
     function remove(id) {
@@ -136,7 +139,7 @@
     }
 
     function save() {
-        localStorage.setItem('med_table_data', JSON.stringify(appointments));
+        localStorage.setItem('med_v3_data', JSON.stringify(appointments));
         render();
     }
 
@@ -144,10 +147,9 @@
         list.innerHTML = appointments.map(a => `
             <div class="card">
                 <button class="btn-delete" onclick="remove(${a.id})">✕</button>
-                
                 <div class="grid">
                     <div class="full">
-                        <label>Pacient (Jméno)</label>
+                        <label>Pacient</label>
                         <input type="text" value="${a.name}" oninput="update(${a.id}, 'name', this.value)">
                     </div>
                     <div class="full">
@@ -156,14 +158,14 @@
                     </div>
                     <div>
                         <label>Datum</label>
-                        <input type="text" value="${a.date}" placeholder="12.10." oninput="update(${a.id}, 'date', this.value)">
+                        <input type="text" value="${a.date}" placeholder="např. 12. 5." oninput="update(${a.id}, 'date', this.value)">
                     </div>
                     <div>
                         <label>Čas</label>
-                        <input type="text" value="${a.time}" placeholder="14:00" oninput="update(${a.id}, 'time', this.value)">
+                        <input type="text" value="${a.time}" placeholder="15:00" oninput="update(${a.id}, 'time', this.value)">
                     </div>
                     <div class="full">
-                        <label>Poznámka / Celý záznam</label>
+                        <label>Poznámka</label>
                         <input type="text" value="${a.note}" oninput="update(${a.id}, 'note', this.value)">
                     </div>
                 </div>
