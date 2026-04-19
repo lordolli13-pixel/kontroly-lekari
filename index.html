@@ -2,248 +2,220 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#ff9f43">
-    <title>Deník Zdraví AI Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>HealthLog PRO Platinum</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
-        :root {
-            --bg: #1e2124; --box-bg: #1e2124; --light-shadow: #2a2e33; --dark-shadow: #121416;
-            --accent: #ff9f43; --text-main: #ffffff; --border-amber: rgba(255, 159, 67, 0.4); --danger: #ff4d4d; --whatsapp: #25d366;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; padding: 12px; font-weight: 600; }
-        .container { width: 100%; max-width: 450px; margin: auto; }
-        
-        /* Tlačítko nahrávání */
-        .ai-mic-btn { width: 100%; background: var(--accent); color: var(--bg); font-weight: 900; border-radius: 15px; padding: 18px; text-align: center; margin-bottom: 20px; cursor: pointer; border: none; font-size: 14px; transition: 0.3s; }
-        .recording { animation: pulse 1.5s infinite; background: var(--danger) !important; color: white !important; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(255, 77, 77, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); } }
-
-        /* Boxy a vstupy */
-        .neu-box { background: var(--box-bg); border-radius: 20px; padding: 15px; box-shadow: 6px 6px 12px var(--dark-shadow), -6px -6px 12px var(--light-shadow); border: 1px solid var(--border-amber); margin-bottom: 20px; }
-        input, select, textarea { width: 100%; border: 1px solid var(--border-amber); background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 10px; font-size: 16px; color: var(--text-main); font-weight: 700; font-family: inherit; }
-        .btn { background: var(--bg); border: 2px solid var(--border-amber); border-radius: 12px; padding: 15px; font-weight: 900; color: var(--accent); text-align: center; cursor: pointer; width: 100%; display: block; margin-bottom: 10px; text-decoration: none; }
-        
-        /* Karty záznamů */
-        .entry { background: var(--box-bg); padding: 15px; border-radius: 18px; margin-bottom: 12px; box-shadow: 4px 4px 10px var(--dark-shadow); position: relative; border-left: 5px solid var(--accent); }
-        .edit-pen { position: absolute; top: 12px; right: 12px; font-size: 18px; color: var(--accent); cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: var(--light-shadow); border-radius: 50%; }
-
-        /* Modální okno */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); }
-        .modal-content { background: var(--bg); margin: 15% auto; padding: 20px; width: 90%; max-width: 400px; border-radius: 25px; border: 2px solid var(--accent); }
-        
-        .tags-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px; }
-        .tag { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: 15px; border: 2px solid transparent; cursor: pointer; background: var(--light-shadow); }
-        .hidden { display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #000; overflow-x: hidden; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-<div class="container">
-    <h2 style="color:var(--accent); text-align:center;">🩺 Zdraví AI Pro</h2>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { motion, AnimatePresence } = window.framerMotion;
 
-    <button class="ai-mic-btn" id="ai-mic" onclick="startSmartVoice()">
-        <span id="mic-label">🎙️ NADIKTOVAT CELÝ ZÁZNAM</span>
-    </button>
-
-    <div class="neu-box">
-        <div class="tags-grid" id="tags-area"></div>
-        <select id="person-select"></select>
-        <div style="display: flex; gap: 8px;">
-            <input type="date" id="date-input" style="flex: 1.2;">
-            <input type="time" id="time-input" style="flex: 0.8;">
-        </div>
-        <input type="text" id="doctor-input" placeholder="Lékař">
-        <input type="text" id="note-input" placeholder="Poznámka">
-        <input type="hidden" id="color-input" value="#ff9f43">
-        <div class="btn" onclick="saveEntry()">Uložit záznam</div>
-    </div>
-
-    <div id="main-list"></div>
-
-    <div class="btn" onclick="toggleSettings()" style="font-size:10px; margin-top:30px;">⚙️ Nastavení a záloha</div>
-    <div id="settings-section" class="neu-box hidden">
-        <input type="text" id="p1-name" placeholder="Jméno 1">
-        <input type="text" id="p2-name" placeholder="Jméno 2">
-        <div class="btn" onclick="updateNames()">Uložit jména</div>
-        <div class="btn" onclick="exportToFile()" style="color:var(--whatsapp)">📤 Záloha / Sdílet</div>
-    </div>
-</div>
-
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <h3 style="color:var(--accent); margin-top:0;">Upravit záznam</h3>
-        <label style="font-size: 10px; color: var(--accent);">PACIENT / LÉKAŘ</label>
-        <input type="text" id="edit-person">
-        <input type="text" id="edit-doctor">
-        <label style="font-size: 10px; color: var(--accent);">POZNÁMKA</label>
-        <textarea id="edit-note" rows="4"></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button class="btn" style="border-color:var(--danger); color:var(--danger);" onclick="deleteEntry()">Smazat</button>
-            <button class="btn" onclick="updateEntry()">Uložit</button>
-        </div>
-        <button class="btn" style="border:none; font-size:12px;" onclick="closeModal()">Zavřít</button>
-    </div>
-</div>
-
-<script>
-    const months = ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"];
-    let currentEditId = null;
-
-    function initApp() {
-        if(!localStorage.getItem('docs_data')) {
-            localStorage.setItem('docs_data', JSON.stringify([
-                {name: "Zubař", icon: "🦷", color: "#e74c3c"},
-                {name: "Oční", icon: "👁️", color: "#3498db"},
-                {name: "Obvodní", icon: "🏥", color: "#25d366"},
-                {name: "Krev", icon: "💉", color: "#f1c40f"}
-            ]));
-        }
-        renderTags(); renderList(); loadSettings();
-        document.getElementById('date-input').valueAsDate = new Date();
-    }
-
-    // --- HLASOVÉ FUNKCE ---
-    function startSmartVoice() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'cs-CZ';
-        recognition.onstart = () => {
-            document.getElementById('ai-mic').classList.add('recording');
-            document.getElementById('mic-label').innerText = "🛑 POSLOUCHÁM...";
+        // --- KNIHOVNA IKON (INTELIGENCE) ---
+        const ICON_MAP = {
+            "🦷": ["zub", "dent", "stoma"], "👁️": ["oční", "oko", "optik"], "❤️": ["kardio", "srdce", "tlak"],
+            "🩸": ["krev", "odběr", "hemat"], "💉": ["očko", "inj", "vakc"], "🦴": ["orto", "kost", "chir", "rtg"],
+            "🧠": ["neuro", "psyc", "hlava"], "👶": ["pediatr", "děts", "mimi"], "🏥": ["nemoc", "pohot"],
+            "💊": ["recep", "lék", "alergo"], "👂": ["orl", "uši", "nos", "krk"], "🩹": ["kožní", "derma"],
+            "🌡️": ["inter", "tepl", "hor"], "🤰": ["gyn", "porod"], "🧘": ["fyzio", "rehab", "cvičení"],
+            "🩺": ["prak", "kont", "prev"]
         };
-        recognition.onresult = (event) => { processAIText(event.results[0][0].transcript.toLowerCase()); };
-        recognition.onend = () => {
-            document.getElementById('ai-mic').classList.remove('recording');
-            document.getElementById('mic-label').innerText = "🎙️ NADIKTOVAT CELÝ ZÁZNAM";
-        };
-        recognition.start();
-    }
 
-    function processAIText(text) {
-        const p1 = document.getElementById('p1-name').value.toLowerCase();
-        const p2 = document.getElementById('p2-name').value.toLowerCase();
-        if (text.includes(p1)) document.getElementById('person-select').value = document.getElementById('p1-name').value;
-        else if (text.includes(p2)) document.getElementById('person-select').value = document.getElementById('p2-name').value;
-        
-        let d = new Date();
-        months.forEach((m, i) => {
-            if (text.includes(m)) {
-                const dayMatch = text.match(new RegExp(`(\\d{1,2})\\.?\\s*${m}`));
-                if (dayMatch) { d.setDate(dayMatch[1]); d.setMonth(i); }
-            }
-        });
-        document.getElementById('date-input').value = d.toISOString().split('T')[0];
-        document.getElementById('note-input').value = text;
-        
-        JSON.parse(localStorage.getItem('docs_data')).forEach(doc => {
-            if (text.includes(doc.name.toLowerCase())) {
-                document.getElementById('doctor-input').value = doc.name;
-                document.getElementById('color-input').value = doc.color;
-            }
-        });
-    }
+        function App() {
+            // --- DATA ---
+            const [entries, setEntries] = useState(() => JSON.parse(localStorage.getItem("hl_recs") || "[]"));
+            const [names, setNames] = useState(() => JSON.parse(localStorage.getItem("hl_names") || '["Pacient 1", "Pacient 2"]'));
+            
+            const [activePerson, setActivePerson] = useState("Všichni");
+            const [showAdd, setShowAdd] = useState(false);
+            const [showSettings, setShowSettings] = useState(false);
 
-    // --- CRUD FUNKCE (Ukládání, Mazání, Editace) ---
-    function saveEntry() {
-        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-        entries.push({
-            id: Date.now(),
-            person: document.getElementById('person-select').value,
-            date: document.getElementById('date-input').value,
-            time: document.getElementById('time-input').value,
-            doctor: document.getElementById('doctor-input').value || "Obecné",
-            note: document.getElementById('note-input').value,
-            color: document.getElementById('color-input').value
-        });
-        localStorage.setItem('health_entries', JSON.stringify(entries));
-        document.getElementById('note-input').value = "";
-        renderList();
-    }
+            // Form
+            const [form, setForm] = useState({ 
+                person: names[0], date: new Date().toISOString().split("T")[0], 
+                time: new Date().toLocaleTimeString('cs', {hour:'2-digit', minute:'2-digit'}), 
+                doc: "", icon: "🩺", note: "" 
+            });
 
-    function renderList() {
-        const container = document.getElementById('main-list');
-        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-        container.innerHTML = '';
-        entries.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(e => {
-            const div = document.createElement('div'); div.className = 'entry'; div.style.borderLeftColor = e.color;
-            div.innerHTML = `
-                <div class="edit-pen" onclick="openModal(${e.id})">✎</div>
-                <div style="font-size:10px; opacity:0.6">${e.person} • ${e.date}</div>
-                <div style="font-size:16px; font-weight:900; color:var(--accent)">${e.doctor}</div>
-                <div style="font-size:14px;">${e.note}</div>`;
-            container.appendChild(div);
-        });
-    }
+            // Inteligentní ikona při psaní
+            useEffect(() => {
+                const txt = form.doc.toLowerCase();
+                let found = "🩺";
+                for (const [icon, keys] of Object.entries(ICON_MAP)) {
+                    if (keys.some(k => txt.includes(k))) { found = icon; break; }
+                }
+                if(form.icon !== found) setForm(f => ({...f, icon: found}));
+            }, [form.doc]);
 
-    // --- MODÁLNÍ OKNO ---
-    function openModal(id) {
-        currentEditId = id;
-        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-        const entry = entries.find(e => e.id === id);
-        document.getElementById('edit-person').value = entry.person;
-        document.getElementById('edit-doctor').value = entry.doctor;
-        document.getElementById('edit-note').value = entry.note;
-        document.getElementById('editModal').style.display = "block";
-    }
+            useEffect(() => localStorage.setItem("hl_recs", JSON.stringify(entries)), [entries]);
+            useEffect(() => localStorage.setItem("hl_names", JSON.stringify(names)), [names]);
 
-    function closeModal() { document.getElementById('editModal').style.display = "none"; }
+            // --- AKCE ---
+            const saveEntry = () => {
+                if(!form.doc) return;
+                const newEntry = { ...form, id: Date.now() };
+                setEntries([newEntry, ...entries]);
+                setShowAdd(false);
+                setForm({...form, doc: "", note: ""});
+            };
 
-    function updateEntry() {
-        let entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-        entries = entries.map(e => e.id === currentEditId ? {
-            ...e, 
-            person: document.getElementById('edit-person').value,
-            doctor: document.getElementById('edit-doctor').value,
-            note: document.getElementById('edit-note').value
-        } : e);
-        localStorage.setItem('health_entries', JSON.stringify(entries));
-        renderList(); closeModal();
-    }
+            const deleteRec = (id) => {
+                if(confirm("Smazat tento záznam?")) setEntries(entries.filter(e => e.id !== id));
+            };
 
-    function deleteEntry() {
-        if (confirm("Opravdu smazat tento záznam?")) {
-            let entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-            entries = entries.filter(e => e.id !== currentEditId);
-            localStorage.setItem('health_entries', JSON.stringify(entries));
-            renderList(); closeModal();
+            const shareWA = () => {
+                const txt = entries.map(e => `*${e.date}* | ${e.person}\n🏥 ${e.doc}\n📝 ${e.note}`).join('\n\n');
+                window.open(`https://wa.me/?text=${encodeURIComponent("*ZDRAVOTNÍ DENÍK*\n\n" + txt)}`);
+            };
+
+            // --- LOGIKA TIMELINE ---
+            const grouped = useMemo(() => {
+                const filtered = activePerson === "Všichni" ? entries : entries.filter(e => e.person === activePerson);
+                const sorted = [...filtered].sort((a,b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+                
+                const g = {};
+                sorted.forEach(e => {
+                    const m = new Date(e.date).toLocaleString('cs', {month:'long', year:'numeric'});
+                    if(!g[m]) g[m] = [];
+                    g[m].push(e);
+                });
+                return g;
+            }, [entries, activePerson]);
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen pb-32">
+                    {/* Header */}
+                    <header className="fixed top-0 max-w-md w-full bg-black/80 backdrop-blur-xl z-50 px-6 py-4 flex justify-between items-center border-b border-white/10">
+                        <div>
+                            <h1 className="text-xl font-black text-white tracking-tighter">HEALTH<span className="text-blue-500">LOG</span></h1>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Premium Edition</p>
+                        </div>
+                        <div className="flex gap-4">
+                            <button onClick={shareWA}><i data-lucide="share-2" className="w-5 h-5 text-zinc-400"></i></button>
+                            <button onClick={() => setShowSettings(true)}><i data-lucide="settings" className="w-5 h-5 text-zinc-400"></i></button>
+                        </div>
+                    </header>
+
+                    <div className="px-4 pt-24">
+                        {/* Pacient filter */}
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-8">
+                            {["Všichni", ...names].map(p => (
+                                <button key={p} onClick={() => setActivePerson(p)} className={`px-5 py-2 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${activePerson === p ? "bg-blue-600 text-white" : "bg-zinc-900 text-zinc-500 border border-white/5"}`}>{p}</button>
+                            ))}
+                        </div>
+
+                        {/* Timeline */}
+                        {Object.keys(grouped).length === 0 ? (
+                            <div className="text-center py-20 text-zinc-700 font-bold uppercase tracking-widest text-xs">Žádné záznamy</div>
+                        ) : (
+                            Object.entries(grouped).map(([month, items]) => (
+                                <div key={month} className="mb-8">
+                                    <h2 className="text-blue-500 text-[11px] font-black uppercase mb-4 tracking-widest px-2">{month}</h2>
+                                    <div className="space-y-3">
+                                        {items.map(e => (
+                                            <div key={e.id} className="bg-zinc-900/50 border border-white/5 p-4 rounded-[24px] flex gap-4 items-start shadow-xl">
+                                                <div className="text-3xl bg-zinc-800 w-12 h-12 rounded-2xl flex items-center justify-center shrink-0">{e.icon}</div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold uppercase">{e.person}</span>
+                                                        <button onClick={() => deleteRec(e.id)} className="text-zinc-700 hover:text-red-500 transition-colors"><i data-lucide="trash-2" className="w-4 h-4"></i></button>
+                                                    </div>
+                                                    <h3 className="text-white font-bold text-lg">{e.doc}</h3>
+                                                    <div className="flex gap-3 text-[11px] text-zinc-500 font-bold mt-1 uppercase">
+                                                        <span>{e.date.split('-').reverse().join('.')}</span>
+                                                        <span className="text-zinc-700">|</span>
+                                                        <span>{e.time}</span>
+                                                    </div>
+                                                    {e.note && <p className="text-zinc-400 text-sm mt-3 leading-relaxed italic">"{e.note}"</p>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Floating Add Button */}
+                    <button onClick={() => setShowAdd(true)} className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-8 py-4 rounded-full font-black shadow-2xl shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                        <i data-lucide="plus" className="w-6 h-6"></i> NOVÝ ZÁZNAM
+                    </button>
+
+                    {/* MODAL: ADD */}
+                    <AnimatePresence>
+                        {showAdd && (
+                            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md p-6 flex items-end sm:items-center justify-center">
+                                <motion.div initial={{y:100}} animate={{y:0}} className="bg-zinc-950 w-full max-w-sm rounded-[40px] p-8 border border-white/10 shadow-2xl">
+                                    <h2 className="text-2xl font-black text-white mb-6 tracking-tight">Nové vyšetření</h2>
+                                    <div className="space-y-4">
+                                        <div className="flex gap-2">
+                                            {names.map(n => (
+                                                <button key={n} onClick={() => setForm({...form, person: n})} className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all ${form.person === n ? "bg-blue-600 text-white" : "bg-zinc-900 text-zinc-600"}`}>{n}</button>
+                                            ))}
+                                        </div>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl">{form.icon}</span>
+                                            <input type="text" placeholder="Lékař / Obor..." value={form.doc} onChange={e => setForm({...form, doc: e.target.value})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-4 pl-14 pr-4 text-white font-bold focus:border-blue-600 outline-none transition-all"/>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <input type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} className="flex-[2] bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none"/>
+                                            <input type="time" value={form.time} onChange={e => setForm({...form, time: e.target.value})} className="flex-1 bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold text-center outline-none"/>
+                                        </div>
+                                        <textarea placeholder="Poznámka..." value={form.note} onChange={e => setForm({...form, note: e.target.value})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white h-24 outline-none focus:border-blue-600 resize-none"></textarea>
+                                        <div className="flex gap-2 pt-2">
+                                            <button onClick={() => setShowAdd(false)} className="flex-1 py-4 bg-zinc-900 text-zinc-500 rounded-2xl font-bold">Zrušit</button>
+                                            <button onClick={saveEntry} className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/30">Uložit</button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* MODAL: SETTINGS */}
+                    <AnimatePresence>
+                        {showSettings && (
+                            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md p-6 flex items-center justify-center">
+                                <div className="bg-zinc-950 w-full max-w-xs rounded-[40px] p-8 border border-white/10">
+                                    <h2 className="text-xl font-black text-white mb-6">Nastavení jmen</h2>
+                                    <div className="space-y-3">
+                                        {names.map((n, i) => (
+                                            <input key={i} type="text" value={n} onChange={e => {
+                                                const copy = [...names]; copy[i] = e.target.value; setNames(copy);
+                                            }} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none focus:border-blue-600"/>
+                                        ))}
+                                        <button onClick={() => setShowSettings(false)} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold mt-4">Hotovo</button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            );
         }
-    }
 
-    // --- NASTAVENÍ ---
-    function renderTags() {
-        const area = document.getElementById('tags-area');
-        JSON.parse(localStorage.getItem('docs_data')).forEach(doc => {
-            const t = document.createElement('div'); t.className = 'tag'; t.style.borderColor = doc.color;
-            t.innerHTML = `<span>${doc.icon}</span><div style="font-size:8px;">${doc.name}</div>`;
-            t.onclick = () => { document.getElementById('doctor-input').value = doc.name; document.getElementById('color-input').value = doc.color; };
-            area.appendChild(t);
-        });
-    }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
 
-    function loadSettings() {
-        const n = JSON.parse(localStorage.getItem('app_names') || '["Jana", "Petr"]');
-        document.getElementById('p1-name').value = n[0]; document.getElementById('p2-name').value = n[1];
-        document.getElementById('person-select').innerHTML = `<option>${n[0]}</option><option>${n[1]}</option>`;
-    }
-
-    function updateNames() {
-        localStorage.setItem('app_names', JSON.stringify([document.getElementById('p1-name').value, document.getElementById('p2-name').value]));
-        location.reload();
-    }
-
-    function toggleSettings() { document.getElementById('settings-section').classList.toggle('hidden'); }
-
-    async function exportToFile() {
-        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-        const text = entries.map(e => `${e.date} - ${e.person} - ${e.doctor}: ${e.note}`).join('\n');
-        if (navigator.share) {
-            navigator.share({ title: 'Můj Deník Zdraví', text: text });
-        } else {
-            alert("Sdílení není v tomto prohlížeči podporováno. Zkopírujte text ručně.");
-        }
-    }
-
-    initApp();
-</script>
+        // Refresh icons after React render
+        setTimeout(() => lucide.createIcons(), 500);
+        // Refresh icons whenever the DOM updates
+        const observer = new MutationObserver(() => lucide.createIcons());
+        observer.observe(document.getElementById('root'), { childList: true, subtree: true });
+    </script>
 </body>
 </html>
