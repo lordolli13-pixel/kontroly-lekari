@@ -3,196 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hlasový Zápisník</title>
+    <title>Rychlý Pacientský Zápisník</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #e74c3c; --success: #27ae60; --bg: #ecf0f1; }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: var(--bg); 
-            margin: 0; padding: 20px; 
-            display: flex; flex-direction: column; align-items: center; 
-        }
-
+        :root { --p: #3498db; --bg: #f0f2f5; --danger: #e74c3c; --success: #2ecc71; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 500px; }
 
-        /* Hlavní ovládací panel */
-        .controls { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 25px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            text-align: center; 
-            margin-bottom: 30px; 
+        .controls { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        
+        /* Styl pro rychlá tlačítka jmen */
+        .quick-names { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; justify-content: center; }
+        .name-tag { 
+            background: #e1e8ed; border: none; padding: 8px 15px; border-radius: 20px; 
+            cursor: pointer; font-size: 14px; font-weight: bold; color: #2c3e50; transition: 0.2s;
+        }
+        .name-tag:hover { background: var(--p); color: white; }
+        .name-tag.active { background: var(--p); color: white; border: 2px solid #2980b9; }
+
+        input#patient-name { 
+            width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; 
+            margin-bottom: 15px; font-size: 16px; box-sizing: border-box; text-align: center;
         }
 
         #mic-btn { 
-            background: var(--accent); 
-            color: white; border: none; 
-            width: 100px; height: 100px; 
-            border-radius: 50%; font-size: 40px; 
-            cursor: pointer; transition: all 0.3s ease; 
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
-            display: flex; align-items: center; justify-content: center; margin: 0 auto;
+            background: var(--danger); color: white; border: none; width: 80px; height: 80px; 
+            border-radius: 50%; font-size: 30px; cursor: pointer; transition: 0.3s; margin: 0 auto;
+            display: flex; align-items: center; justify-content: center;
         }
+        #mic-btn.recording { background: var(--success); transform: scale(1.1); box-shadow: 0 0 15px rgba(46, 204, 113, 0.5); }
 
-        #mic-btn.active { 
-            background: var(--success); 
-            transform: scale(1.1); 
-            box-shadow: 0 0 30px rgba(39, 174, 96, 0.5); 
-        }
-
-        #status { margin-top: 20px; font-weight: bold; color: var(--primary); }
-
-        /* Karty se záznamy */
-        .note-card { 
-            background: white; 
-            padding: 15px; 
-            border-radius: 15px; 
-            margin-bottom: 15px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-            display: flex; flex-direction: column; gap: 10px;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        textarea { 
-            width: 100%; 
-            border: 1px solid #ddd; 
-            border-radius: 10px; 
-            padding: 12px; 
-            font-size: 16px; 
-            font-family: inherit; 
-            resize: vertical; 
-            box-sizing: border-box;
-            background: #fdfdfd;
-        }
-
-        textarea:focus { outline: none; border-color: #3498db; background: white; }
-
-        .card-actions { display: flex; justify-content: space-between; align-items: center; }
-        
-        .time-label { font-size: 12px; color: #95a5a6; }
-        
-        .del-btn { 
-            background: #f1f2f6; 
-            color: #a4b0be; border: none; 
-            padding: 8px 15px; border-radius: 8px; 
-            cursor: pointer; font-weight: bold;
-        }
-
-        .del-btn:hover { background: var(--accent); color: white; }
+        .card { background: white; padding: 15px; border-radius: 15px; margin-bottom: 12px; border-left: 6px solid var(--p); position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card input { width: 100%; border: none; font-weight: bold; font-size: 16px; margin-bottom: 5px; color: #2c3e50; }
+        .card textarea { width: 100%; border: 1px solid #f0f0f0; border-radius: 8px; padding: 8px; font-size: 14px; font-family: inherit; resize: none; }
+        .del-btn { position: absolute; top: 10px; right: 10px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 18px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="controls">
+        <label style="font-size: 12px; font-weight: bold; color: var(--p); display: block; margin-bottom: 8px;">RYCHLÝ VÝBĚR PACIENTA:</label>
+        <div id="quick-names-list" class="quick-names">
+            </div>
+        
+        <input type="text" id="patient-name" placeholder="Nebo napište jméno...">
+        
         <button id="mic-btn">🎤</button>
-        <div id="status">Klepni a začni mluvit</div>
+        <div id="status" style="margin-top:10px; font-size: 13px; font-weight: bold; color: #666;">Vyberte jméno a diktujte</div>
     </div>
 
     <div id="notes-list"></div>
 </div>
 
 <script>
+    const nameInput = document.getElementById('patient-name');
+    const quickNamesDiv = document.getElementById('quick-names-list');
     const micBtn = document.getElementById('mic-btn');
-    const status = document.getElementById('status');
     const list = document.getElementById('notes-list');
 
-    // Načtení dat z paměti telefonu
-    let notes = JSON.parse(localStorage.getItem('simple_notes_v1') || '[]');
+    // Seznam jmen pro rychlý výběr (můžeš si je tu upravit)
+    let configNames = ["Jan Novák", "Marie Černá", "Petr Svoboda", "Jana Novotná", "Karel Dvořák"];
+    let records = JSON.parse(localStorage.getItem('med_fast_v1') || '[]');
     let isRecording = false;
 
-    // Inicializace hlasu
+    // Funkce pro vykreslení rychlých tlačítek
+    function renderQuickNames() {
+        quickNamesDiv.innerHTML = configNames.map(name => `
+            <button class="name-tag" onclick="selectName('${name}')">${name}</button>
+        `).join('');
+    }
+
+    function selectName(name) {
+        nameInput.value = name;
+        // Vizuální zpětná vazba
+        document.querySelectorAll('.name-tag').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText === name);
+        });
+    }
+
+    // Hlasová logika
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
     if (SpeechRec) {
         const recognition = new SpeechRec();
         recognition.lang = 'cs-CZ';
-        recognition.continuous = false;
 
         micBtn.onclick = () => {
-            if (!isRecording) {
-                recognition.start();
-            } else {
-                recognition.stop();
-            }
+            if (!nameInput.value) { alert("Vyberte jméno!"); return; }
+            if (!isRecording) recognition.start();
+            else recognition.stop();
         };
 
         recognition.onstart = () => {
             isRecording = true;
-            micBtn.classList.add('active');
+            micBtn.classList.add('recording');
             micBtn.innerHTML = "⏹️";
-            status.innerText = "Teď mluv, nahrávám...";
         };
 
         recognition.onresult = (e) => {
             const text = e.results[0][0].transcript;
-            addNote(text);
+            addRecord(nameInput.value, text);
         };
 
         recognition.onend = () => {
             isRecording = false;
-            micBtn.classList.remove('active');
+            micBtn.classList.remove('recording');
             micBtn.innerHTML = "🎤";
-            status.innerText = "Hotovo. Klepni pro další větu.";
-        };
-
-        recognition.onerror = () => {
-            status.innerText = "Chyba mikrofonu (vyžaduje HTTPS).";
-            isRecording = false;
-            micBtn.classList.remove('active');
-            micBtn.innerHTML = "🎤";
+            nameInput.value = ""; 
+            document.querySelectorAll('.name-tag').forEach(b => b.classList.remove('active'));
         };
     }
 
-    function addNote(text) {
-        const now = new Date();
-        const timestamp = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
-        const newNote = {
-            id: Date.now(),
-            content: text,
-            time: timestamp
-        };
-
-        notes.unshift(newNote);
-        saveAndRender();
+    function addRecord(name, data) {
+        const entry = { id: Date.now(), name, data, time: new Date().toLocaleString('cs-CZ') };
+        records.unshift(entry);
+        save();
     }
 
-    function updateNote(id, newContent) {
-        notes = notes.map(n => n.id === id ? {...n, content: newContent} : n);
-        localStorage.setItem('simple_notes_v1', JSON.stringify(notes));
+    function update(id, field, val) {
+        records = records.map(r => r.id === id ? {...r, [field]: val} : r);
+        localStorage.setItem('med_fast_v1', JSON.stringify(records));
     }
 
-    function deleteNote(id) {
-        notes = notes.filter(n => n.id !== id);
-        saveAndRender();
+    function del(id) {
+        records = records.filter(r => r.id !== id);
+        save();
     }
 
-    function saveAndRender() {
-        localStorage.setItem('simple_notes_v1', JSON.stringify(notes));
+    function save() {
+        localStorage.setItem('med_fast_v1', JSON.stringify(records));
         render();
     }
 
     function render() {
-        list.innerHTML = notes.map(n => `
-            <div class="note-card">
-                <textarea rows="3" oninput="updateNote(${n.id}, this.value)">${n.content}</textarea>
-                <div class="card-actions">
-                    <span class="time-label">Vytvořeno: ${n.time}</span>
-                    <button class="del-btn" onclick="deleteNote(${n.id})">Smazat</button>
-                </div>
+        list.innerHTML = records.map(r => `
+            <div class="card">
+                <button class="del-btn" onclick="del(${r.id})">✕</button>
+                <input type="text" value="${r.name}" oninput="update(${r.id}, 'name', this.value)">
+                <textarea oninput="update(${r.id}, 'data', this.value)">${r.data}</textarea>
+                <div style="font-size:10px; color:#aaa; margin-top:5px;">${r.time}</div>
             </div>
         `).join('');
     }
 
-    // První vykreslení při startu
+    renderQuickNames();
     render();
 </script>
 
