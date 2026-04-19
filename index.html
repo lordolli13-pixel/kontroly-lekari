@@ -3,169 +3,196 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lékařský Zápisník - Fix Datumu</title>
+    <title>Hlasový Zápisník</title>
     <style>
-        :root { --p: #007bff; --bg: #f4f7f6; --danger: #e74c3c; --success: #2ecc71; }
-        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .app-container { width: 100%; max-width: 500px; }
-        .controls { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
-        #mic-btn { background: var(--danger); color: white; border: none; width: 80px; height: 80px; border-radius: 50%; font-size: 30px; cursor: pointer; transition: 0.3s; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
-        #mic-btn.recording { background: var(--success); transform: scale(1.05); }
-        #status { margin-top: 15px; font-size: 0.9rem; color: #444; min-height: 40px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 6px solid var(--p); position: relative; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .full { grid-column: span 2; }
-        label { display: block; font-size: 10px; font-weight: bold; color: var(--p); text-transform: uppercase; margin-top: 8px; }
-        input { width: 100%; border: 1px solid #ddd; padding: 10px; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-        .btn-del { position: absolute; top: 10px; right: 10px; border: none; background: none; color: #ccc; cursor: pointer; font-size: 18px; }
+        :root { --primary: #2c3e50; --accent: #e74c3c; --success: #27ae60; --bg: #ecf0f1; }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; padding: 20px; 
+            display: flex; flex-direction: column; align-items: center; 
+        }
+
+        .container { width: 100%; max-width: 500px; }
+
+        /* Hlavní ovládací panel */
+        .controls { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 25px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            text-align: center; 
+            margin-bottom: 30px; 
+        }
+
+        #mic-btn { 
+            background: var(--accent); 
+            color: white; border: none; 
+            width: 100px; height: 100px; 
+            border-radius: 50%; font-size: 40px; 
+            cursor: pointer; transition: all 0.3s ease; 
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            display: flex; align-items: center; justify-content: center; margin: 0 auto;
+        }
+
+        #mic-btn.active { 
+            background: var(--success); 
+            transform: scale(1.1); 
+            box-shadow: 0 0 30px rgba(39, 174, 96, 0.5); 
+        }
+
+        #status { margin-top: 20px; font-weight: bold; color: var(--primary); }
+
+        /* Karty se záznamy */
+        .note-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 15px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+            display: flex; flex-direction: column; gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        textarea { 
+            width: 100%; 
+            border: 1px solid #ddd; 
+            border-radius: 10px; 
+            padding: 12px; 
+            font-size: 16px; 
+            font-family: inherit; 
+            resize: vertical; 
+            box-sizing: border-box;
+            background: #fdfdfd;
+        }
+
+        textarea:focus { outline: none; border-color: #3498db; background: white; }
+
+        .card-actions { display: flex; justify-content: space-between; align-items: center; }
+        
+        .time-label { font-size: 12px; color: #95a5a6; }
+        
+        .del-btn { 
+            background: #f1f2f6; 
+            color: #a4b0be; border: none; 
+            padding: 8px 15px; border-radius: 8px; 
+            cursor: pointer; font-weight: bold;
+        }
+
+        .del-btn:hover { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="container">
     <div class="controls">
         <button id="mic-btn">🎤</button>
-        <div id="status">Klepněte a mluvte...</div>
+        <div id="status">Klepni a začni mluvit</div>
     </div>
-    <div id="list"></div>
+
+    <div id="notes-list"></div>
 </div>
 
 <script>
     const micBtn = document.getElementById('mic-btn');
     const status = document.getElementById('status');
-    const list = document.getElementById('list');
+    const list = document.getElementById('notes-list');
 
-    let appointments = JSON.parse(localStorage.getItem('med_v4_data') || '[]');
+    // Načtení dat z paměti telefonu
+    let notes = JSON.parse(localStorage.getItem('simple_notes_v1') || '[]');
     let isRecording = false;
 
+    // Inicializace hlasu
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (SpeechRec) {
         const recognition = new SpeechRec();
         recognition.lang = 'cs-CZ';
+        recognition.continuous = false;
 
         micBtn.onclick = () => {
-            if (!isRecording) recognition.start();
-            else recognition.stop();
+            if (!isRecording) {
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
         };
 
         recognition.onstart = () => {
             isRecording = true;
-            micBtn.classList.add('recording');
+            micBtn.classList.add('active');
             micBtn.innerHTML = "⏹️";
-            status.innerText = "Poslouchám...";
+            status.innerText = "Teď mluv, nahrávám...";
         };
 
         recognition.onresult = (e) => {
             const text = e.results[0][0].transcript;
-            status.innerText = "Slyšeno: " + text;
-            processData(text);
+            addNote(text);
         };
 
         recognition.onend = () => {
             isRecording = false;
-            micBtn.classList.remove('recording');
+            micBtn.classList.remove('active');
+            micBtn.innerHTML = "🎤";
+            status.innerText = "Hotovo. Klepni pro další větu.";
+        };
+
+        recognition.onerror = () => {
+            status.innerText = "Chyba mikrofonu (vyžaduje HTTPS).";
+            isRecording = false;
+            micBtn.classList.remove('active');
             micBtn.innerHTML = "🎤";
         };
     }
 
-    function processData(text) {
-        const lowerText = text.toLowerCase();
-
-        // 1. EXTRAKCE DATUMU (vylepšená)
-        // Hledá čísla následovaná měsícem nebo tečkou
-        const months = ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"];
-        let foundDate = "";
+    function addNote(text) {
+        const now = new Date();
+        const timestamp = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
-        // Zkusíme najít klasické "DD. MM."
-        const dateMatch = text.match(/(\d{1,2}\.\s?\d{1,2}\.?)/);
-        if (dateMatch) {
-            foundDate = dateMatch[0];
-        } else {
-            // Pokud nenajde tečky, zkusí hledat měsíce slovem
-            months.forEach((m, index) => {
-                if (lowerText.includes(m)) {
-                    const dayMatch = text.match(new RegExp(`(\\d{1,2})\\.?\\s*${m}`, 'i'));
-                    if (dayMatch) foundDate = `${dayMatch[1]}. ${index + 1}.`;
-                }
-            });
-        }
-
-        // 2. EXTRAKCE ČASU
-        const timeMatch = text.match(/(\d{1,2}[:\.]\d{2})/);
-        const foundTime = timeMatch ? timeMatch[1].replace('.', ':') : "";
-
-        // 3. EXTRAKCE LÉKAŘE
-        let doctor = "";
-        ["doktor", "mudr", "lékař"].forEach(kw => {
-            if (lowerText.includes(kw)) {
-                const parts = text.split(new RegExp(kw, 'i'));
-                if (parts[1]) doctor = parts[1].trim().split(' ')[0];
-            }
-        });
-
-        // 4. JMÉNO (první dvě slova)
-        const words = text.split(' ');
-        const name = (words[0] + " " + (words[1] || "")).trim();
-
-        const entry = {
+        const newNote = {
             id: Date.now(),
-            name: name,
-            doctor: doctor,
-            date: foundDate,
-            time: foundTime,
-            note: text
+            content: text,
+            time: timestamp
         };
 
-        appointments.unshift(entry);
-        save();
+        notes.unshift(newNote);
+        saveAndRender();
     }
 
-    function update(id, field, value) {
-        appointments = appointments.map(a => a.id === id ? {...a, [field]: value} : a);
-        localStorage.setItem('med_v4_data', JSON.stringify(appointments));
+    function updateNote(id, newContent) {
+        notes = notes.map(n => n.id === id ? {...n, content: newContent} : n);
+        localStorage.setItem('simple_notes_v1', JSON.stringify(notes));
     }
 
-    function remove(id) {
-        appointments = appointments.filter(a => a.id !== id);
-        save();
+    function deleteNote(id) {
+        notes = notes.filter(n => n.id !== id);
+        saveAndRender();
     }
 
-    function save() {
-        localStorage.setItem('med_v4_data', JSON.stringify(appointments));
+    function saveAndRender() {
+        localStorage.setItem('simple_notes_v1', JSON.stringify(notes));
         render();
     }
 
     function render() {
-        list.innerHTML = appointments.map(a => `
-            <div class="card">
-                <button class="btn-del" onclick="remove(${a.id})">✕</button>
-                <div class="grid">
-                    <div class="full">
-                        <label>Pacient</label>
-                        <input type="text" value="${a.name}" oninput="update(${a.id}, 'name', this.value)">
-                    </div>
-                    <div class="full">
-                        <label>Lékař</label>
-                        <input type="text" value="${a.doctor}" oninput="update(${a.id}, 'doctor', this.value)">
-                    </div>
-                    <div>
-                        <label>Datum</label>
-                        <input type="text" value="${a.date}" oninput="update(${a.id}, 'date', this.value)">
-                    </div>
-                    <div>
-                        <label>Čas</label>
-                        <input type="text" value="${a.time}" oninput="update(${a.id}, 'time', this.value)">
-                    </div>
-                    <div class="full">
-                        <label>Poznámka</label>
-                        <input type="text" value="${a.note}" oninput="update(${a.id}, 'note', this.value)">
-                    </div>
+        list.innerHTML = notes.map(n => `
+            <div class="note-card">
+                <textarea rows="3" oninput="updateNote(${n.id}, this.value)">${n.content}</textarea>
+                <div class="card-actions">
+                    <span class="time-label">Vytvořeno: ${n.time}</span>
+                    <button class="del-btn" onclick="deleteNote(${n.id})">Smazat</button>
                 </div>
             </div>
         `).join('');
     }
 
+    // První vykreslení při startu
     render();
 </script>
 
