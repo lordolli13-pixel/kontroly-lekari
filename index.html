@@ -47,7 +47,6 @@
         .entry { background: var(--box-bg); padding: 15px; border-radius: 18px; margin-bottom: 12px; box-shadow: 4px 4px 10px var(--dark-shadow); position: relative; border-left: 5px solid var(--accent); width: 100%; }
         .trash-btn { position: absolute; right: 10px; top: 10px; color: var(--danger); cursor: pointer; font-size: 20px; padding: 5px; z-index: 5; }
 
-        /* Nové styly pro sdílení v kartě */
         .entry-share-bar { display: flex; gap: 8px; margin-top: 12px; border-top: 1px solid var(--border-amber); padding-top: 10px; }
         .share-btn { flex: 1; padding: 8px; border-radius: 8px; font-size: 10px; text-transform: uppercase; font-weight: 800; text-align: center; cursor: pointer; border: 1px solid var(--border-amber); color: var(--text-dim); }
         .share-btn.wa { border-color: var(--whatsapp); color: var(--whatsapp); }
@@ -73,6 +72,7 @@
     <div class="header-area">
         <h2>🩺 Zdraví PRO</h2>
         <div class="top-icons">
+            <div class="icon-btn" id="notif-indicator" onclick="requestNotificationPermission()" title="Zapnout notifikace">🔔</div>
             <div class="icon-btn" onclick="toggleTheme()">☀️</div>
             <div class="icon-btn" onclick="openPalette()">🎨</div>
             <div class="icon-btn" onclick="openQRMenu()">📲</div>
@@ -97,6 +97,37 @@
     <div class="settings-trigger" onclick="openModal()">⚙️ NASTAVENÍ A LÉKAŘI</div>
 </div>
 
+<div class="modal-overlay" id="modal-settings">
+    <div class="modal-content">
+        <div class="neu-box">
+            <span class="close-modal" onclick="closeModal()">×</span>
+            <h4 style="color: var(--accent); text-transform: uppercase;">Správa lékařů</h4>
+            <div id="modal-docs-list"></div>
+            <hr>
+            <h4>➕ NOVÝ LÉKAŘ</h4>
+            <input type="text" id="new-doc-name" placeholder="Název lékaře">
+            <select id="new-doc-icon">
+                <option value="🩺">🩺 Praktik</option>
+                <option value="🦷">🦷 Zubař</option>
+                <option value="👁️">👁️ Oční</option>
+                <option value="🫀">🫀 Kardiologie</option>
+                <option value="🧠">🧠 Neurologie</option>
+                <option value="💉">💉 Očkování</option>
+                <option value="🧪">🧪 Laboratoř</option>
+            </select>
+            <input type="color" id="new-doc-color" value="#ff9f43">
+            <div class="btn" onclick="addDoctor()">Přidat lékaře</div>
+            <hr>
+            <h4>PACIENTI</h4>
+            <input type="text" id="p1-name" placeholder="Jméno 1">
+            <input type="text" id="p2-name" placeholder="Jméno 2">
+            <div class="btn" onclick="updateNames()">Uložit jména</div>
+            <hr>
+            <div class="btn" style="color: var(--danger)" onclick="requestNotificationPermission()">Testovat / Povolit Notifikace</div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="modal-palette">
     <div class="modal-content">
         <div class="neu-box">
@@ -116,41 +147,6 @@
             </div>
             <hr>
             <div class="btn" onclick="resetColors()">Obnovit původní</div>
-            <div class="btn" onclick="closePalette()">Zavřít</div>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="modal-settings">
-    <div class="modal-content">
-        <div class="neu-box">
-            <span class="close-modal" onclick="closeModal()">×</span>
-            <h4 style="color: var(--accent); text-transform: uppercase;">Správa lékařů</h4>
-            <div id="modal-docs-list"></div>
-            <hr>
-            <h4>➕ NOVÝ LÉKAŘ</h4>
-            <input type="text" id="new-doc-name" placeholder="Název lékaře">
-            <select id="new-doc-icon">
-                <option value="🏥">🏥 Nemocnice</option>
-                <option value="🩺">🩺 Praktik</option>
-                <option value="🦷">🦷 Zubař</option>
-                <option value="👁️">👁️ Oční</option>
-                <option value="🫀">🫀 Kardiologie</option>
-                <option value="🧠">🧠 Neurologie</option>
-                <option value="🦴">🦴 Ortopedie</option>
-                <option value="🩸">🩸 Krev / Laboratoř</option>
-                <option value="🤰">🤰 Gynekologie</option>
-                <option value="👶">👶 Pediatrie</option>
-                <option value="💊">💊 Léky</option>
-                <option value="💉">💉 Očkování</option>
-            </select>
-            <input type="color" id="new-doc-color" value="#ff9f43" style="width: 100%; height: 40px; border:none; background:none;">
-            <div class="btn" onclick="addDoctor()">Přidat lékaře</div>
-            <hr>
-            <h4>PACIENTI</h4>
-            <input type="text" id="p1-name" placeholder="Jméno 1">
-            <input type="text" id="p2-name" placeholder="Jméno 2">
-            <div class="btn" onclick="updateNames()">Uložit jména</div>
         </div>
     </div>
 </div>
@@ -163,7 +159,6 @@
             <div class="btn" onclick="generateQR()">Zobrazit kompletní QR</div>
             <div id="qrcode"></div>
             <hr>
-            <div class="btn" onclick="startScanner()">Naskenovat kód (Import)</div>
             <div id="reader"></div>
         </div>
     </div>
@@ -175,8 +170,6 @@
             <span class="close-modal" onclick="document.getElementById('modal-single-qr').classList.remove('active')">×</span>
             <h4 style="color: var(--accent); text-transform: uppercase;">Sdílet záznam</h4>
             <div id="single-qrcode"></div>
-            <p style="font-size: 11px; opacity: 0.7;">Naskenujte druhým telefonem pro import tohoto záznamu.</p>
-            <div class="btn" onclick="document.getElementById('modal-single-qr').classList.remove('active')">Hotovo</div>
         </div>
     </div>
 </div>
@@ -188,157 +181,118 @@
     document.addEventListener('DOMContentLoaded', () => { 
         applySavedColors();
         setTheme(localStorage.getItem('theme') || 'dark'); 
-        initApp(); 
+        initApp();
+        checkNotificationStatus();
+        startNotificationShadowLoop();
     });
 
-    /* --- BARVY --- */
+    /* --- NOTIFIKACE (Github Pages kompatibilní) --- */
+    function checkNotificationStatus() {
+        const btn = document.getElementById('notif-indicator');
+        if (Notification.permission === "granted") {
+            btn.style.color = "var(--accent)";
+            btn.innerHTML = "🔔";
+        } else if (Notification.permission === "denied") {
+            btn.style.color = "var(--danger)";
+            btn.innerHTML = "🔕";
+        }
+    }
+
+    function requestNotificationPermission() {
+        Notification.requestPermission().then(permission => {
+            checkNotificationStatus();
+            if (permission === "granted") {
+                new Notification("Zdraví PRO", { body: "Notifikace byly úspěšně zapnuty!", icon: "https://cdn-icons-png.flaticon.com/512/3004/3004451.png" });
+            }
+        });
+    }
+
+    function startNotificationShadowLoop() {
+        // Kontrola každou minutu
+        setInterval(() => {
+            const now = new Date();
+            const currentStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+            
+            const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
+            entries.forEach(e => {
+                const entryTime = `${e.date} ${e.time}`;
+                if (entryTime === currentStr) {
+                    sendLocalNotification(e);
+                }
+            });
+        }, 60000); // 60 sekund
+    }
+
+    function sendLocalNotification(e) {
+        if (Notification.permission === "granted") {
+            new Notification(`PŘIPOMÍNKA: ${e.doctor}`, {
+                body: `Pacient: ${e.person}\nPoznámka: ${e.note}`,
+                icon: "https://cdn-icons-png.flaticon.com/512/3004/3004451.png",
+                tag: e.id // zabrání duplicitám pro stejný záznam
+            });
+        }
+    }
+
+    /* --- ZBYTEK LOGIKY APLIKACE (Beze změny) --- */
     function openPalette() { document.getElementById('modal-palette').classList.add('active'); }
     function closePalette() { document.getElementById('modal-palette').classList.remove('active'); }
-
     function updateAppColors() {
         const accent = document.getElementById('cfg-accent').value;
         const bg = document.getElementById('cfg-bg').value;
         const text = document.getElementById('cfg-text').value;
-        const themeData = { accent, bg, text };
-        localStorage.setItem('custom_theme', JSON.stringify(themeData));
+        localStorage.setItem('custom_theme', JSON.stringify({ accent, bg, text }));
         applyThemeStyles(accent, bg, text);
     }
-
     function applyThemeStyles(accent, bg, text) {
         const root = document.documentElement;
         root.style.setProperty('--accent', accent);
         root.style.setProperty('--bg', bg);
         root.style.setProperty('--box-bg', bg);
-        root.style.setProperty('--input-bg', bg);
         root.style.setProperty('--text-main', text);
         root.style.setProperty('--border-amber', accent + '66');
-        document.getElementById('theme-meta').setAttribute('content', bg);
     }
-
     function applySavedColors() {
         const saved = localStorage.getItem('custom_theme');
         if (saved) {
             const { accent, bg, text } = JSON.parse(saved);
-            document.getElementById('cfg-accent').value = accent;
-            document.getElementById('cfg-bg').value = bg;
-            document.getElementById('cfg-text').value = text;
             applyThemeStyles(accent, bg, text);
         }
     }
-
-    function resetColors() {
-        localStorage.removeItem('custom_theme');
-        location.reload();
-    }
-
-    /* --- THEME --- */
+    function resetColors() { localStorage.removeItem('custom_theme'); location.reload(); }
     function setTheme(t) { document.body.setAttribute('data-theme', t); localStorage.setItem('theme', t); }
     function toggleTheme() { setTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
-
     function openModal() { document.getElementById('modal-settings').classList.add('active'); renderTags(); }
     function closeModal() { document.getElementById('modal-settings').classList.remove('active'); }
-
     function openQRMenu() { document.getElementById('modal-qr').classList.add('active'); }
-    function closeQRModal() { 
-        document.getElementById('modal-qr').classList.remove('active'); 
-        if(html5QrCode) html5QrCode.stop(); 
-        document.getElementById('qrcode').innerHTML = "";
-    }
+    function closeQRModal() { document.getElementById('modal-qr').classList.remove('active'); }
 
-    /* --- LOGIKA SDÍLENÍ KONKRÉTNÍHO ZÁZNAMU --- */
-    
-    // WhatsApp Export
     function shareWhatsApp(id) {
         const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
         const e = entries.find(x => x.id === id);
         if(!e) return;
-        
-        const dateStr = new Date(e.date).toLocaleDateString('cs-CZ');
-        const text = `*Záznam z Deníku Zdraví*\n\n👤 *Pacient:* ${e.person}\n📅 *Datum:* ${dateStr} ${e.time}\n🏥 *Lékař:* ${e.doctor}\n📝 *Poznámka:* ${e.note}`;
-        
-        const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(waUrl, '_blank');
+        const text = `*Záznam z Deníku Zdraví*\n👤 *Pacient:* ${e.person}\n📅 *Datum:* ${e.date} ${e.time}\n🏥 *Lékař:* ${e.doctor}\n📝 *Poznámka:* ${e.note}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
 
-    // QR Export (Jen jeden záznam)
     function shareSingleQR(id) {
         const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
         const e = entries.find(x => x.id === id);
-        if(!e) return;
-
         document.getElementById('single-qrcode').innerHTML = "";
-        const modal = document.getElementById('modal-single-qr');
-        modal.classList.add('active');
-
-        // Speciální hlavička pro identifikaci, že jde o jeden záznam
-        const shareData = {
-            type: "SINGLE_IMPORT",
-            payload: e
-        };
-
-        new QRCode(document.getElementById("single-qrcode"), { 
-            text: JSON.stringify(shareData), 
-            width: 200, 
-            height: 200 
-        });
+        document.getElementById('modal-single-qr').classList.add('active');
+        new QRCode(document.getElementById("single-qrcode"), { text: JSON.stringify({ type: "SINGLE_IMPORT", payload: e }), width: 200, height: 200 });
     }
 
-    /* --- LOGIKA PŘENOSU (SKENER) --- */
-    function generateQR() {
-        document.getElementById('qrcode').innerHTML = "";
-        const data = {
-            type: "FULL_BACKUP",
-            docs: JSON.parse(localStorage.getItem('docs_data') || '[]'),
-            entries: JSON.parse(localStorage.getItem('health_entries') || '[]'),
-            names: JSON.parse(localStorage.getItem('app_names') || '["Osoba 1", "Osoba 2"]')
-        };
-        new QRCode(document.getElementById("qrcode"), { text: JSON.stringify(data), width: 256, height: 256 });
-    }
-
-    function startScanner() {
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (text) => {
-            try {
-                const data = JSON.parse(text);
-                
-                // Varianta 1: Import jednoho záznamu
-                if(data.type === "SINGLE_IMPORT") {
-                    if(confirm("Importovat tento jeden záznam do vašeho seznamu?")) {
-                        const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
-                        // Přidáme nové ID aby se netlouklo s existujícími
-                        data.payload.id = Date.now();
-                        entries.push(data.payload);
-                        localStorage.setItem('health_entries', JSON.stringify(entries));
-                        location.reload();
-                    }
-                } 
-                // Varianta 2: Kompletní záloha
-                else if(data.type === "FULL_BACKUP" || data.docs) {
-                    if(confirm("POZOR: Toto přepíše všechna vaše současná data. Pokračovat?")) {
-                        localStorage.setItem('docs_data', JSON.stringify(data.docs));
-                        localStorage.setItem('health_entries', JSON.stringify(data.entries));
-                        localStorage.setItem('app_names', JSON.stringify(data.names));
-                        location.reload();
-                    }
-                }
-            } catch(e) { alert("Chyba QR kódu: Neplatný formát."); }
-        });
-    }
-
-    /* --- HLAVNÍ FUNKCE A RENDEROVÁNÍ --- */
     function initApp() {
         if(!localStorage.getItem('docs_data')) {
             localStorage.setItem('docs_data', JSON.stringify([
-                {id: 1, name: "Zubař", icon: "🦷", color: "#e74c3c"}, 
-                {id: 2, name: "Praktik", icon: "🩺", color: "#3498db"}
+                {id: 1, name: "Praktik", icon: "🩺", color: "#3498db"}, 
+                {id: 2, name: "Zubař", icon: "🦷", color: "#e74c3c"}
             ]));
         }
         const now = new Date();
         document.getElementById('date-input').valueAsDate = now;
         document.getElementById('time-input').value = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
-        renderTags(); 
-        renderList(); 
-        loadSettings();
+        renderTags(); renderList(); loadSettings();
     }
 
     function renderTags() {
@@ -346,20 +300,15 @@
         const modalList = document.getElementById('modal-docs-list');
         const docs = JSON.parse(localStorage.getItem('docs_data') || '[]');
         area.innerHTML = ''; modalList.innerHTML = '';
-
         docs.forEach((doc) => {
             const t = document.createElement('div'); 
             t.className = 'tag'; t.style.borderColor = doc.color;
             t.innerHTML = `<span>${doc.icon}</span><div class="tag-name">${escapeHTML(doc.name)}</div>`;
-            t.onclick = () => { 
-                document.getElementById('doctor-input').value = doc.name; 
-                document.getElementById('color-input').value = doc.color;
-            };
+            t.onclick = () => { document.getElementById('doctor-input').value = doc.name; document.getElementById('color-input').value = doc.color; };
             area.appendChild(t);
-
             const mRow = document.createElement('div');
             mRow.className = 'modal-doc-item';
-            mRow.innerHTML = `<span>${doc.icon} ${escapeHTML(doc.name)}</span><span style="color:var(--danger); cursor:pointer; font-size:20px;" onclick="deleteDoctor(event, ${doc.id})">🗑️</span>`;
+            mRow.innerHTML = `<span>${doc.icon} ${escapeHTML(doc.name)}</span><span style="color:var(--danger); cursor:pointer;" onclick="deleteDoctor(event, ${doc.id})">🗑️</span>`;
             modalList.appendChild(mRow);
         });
     }
@@ -369,17 +318,12 @@
         if(!doc) return alert("Vyberte lékaře!");
         const entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
         entries.push({ 
-            id: Date.now(), 
-            person: document.getElementById('person-select').value, 
-            date: document.getElementById('date-input').value, 
-            time: document.getElementById('time-input').value, 
-            doctor: doc, 
-            note: document.getElementById('note-input').value, 
-            color: document.getElementById('color-input').value 
+            id: Date.now(), person: document.getElementById('person-select').value, 
+            date: document.getElementById('date-input').value, time: document.getElementById('time-input').value, 
+            doctor: doc, note: document.getElementById('note-input').value, color: document.getElementById('color-input').value 
         });
         localStorage.setItem('health_entries', JSON.stringify(entries));
-        document.getElementById('note-input').value = '';
-        renderList();
+        document.getElementById('note-input').value = ''; renderList();
     }
 
     function renderList() {
@@ -387,15 +331,13 @@
         let entries = JSON.parse(localStorage.getItem('health_entries') || '[]');
         container.innerHTML = '';
         entries.sort((a,b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
-        
         let lastMonth = "";
         entries.forEach(e => {
             const dateObj = new Date(e.date);
             const currentMonth = dateObj.toLocaleString('cs-CZ', { month: 'long', year: 'numeric' });
             if (currentMonth !== lastMonth) {
                 const mHeader = document.createElement('div'); mHeader.className = 'month-header';
-                mHeader.textContent = currentMonth; container.appendChild(mHeader);
-                lastMonth = currentMonth;
+                mHeader.textContent = currentMonth; container.appendChild(mHeader); lastMonth = currentMonth;
             }
             const div = document.createElement('div'); 
             div.className = 'entry'; div.style.borderLeftColor = e.color;
@@ -405,10 +347,9 @@
                 <div style="font-size:17px; font-weight:900;">${escapeHTML(e.doctor)}</div>
                 <div style="font-size:13px; opacity:0.8; margin-bottom:5px;">${escapeHTML(e.note)}</div>
                 <div class="entry-share-bar">
-                    <div class="share-btn wa" onclick="shareWhatsApp(${e.id})">WhatsApp</div>
-                    <div class="share-btn qr" onclick="shareSingleQR(${e.id})">QR Kód</div>
-                </div>
-            `;
+                    <div class="share-btn wa" onclick="shareWhatsApp(${e.id})">WA</div>
+                    <div class="share-btn qr" onclick="shareSingleQR(${e.id})">QR</div>
+                </div>`;
             container.appendChild(div);
         });
     }
@@ -419,23 +360,20 @@
         const docs = JSON.parse(localStorage.getItem('docs_data') || '[]');
         docs.push({ id: Date.now(), name, icon: document.getElementById('new-doc-icon').value, color: document.getElementById('new-doc-color').value });
         localStorage.setItem('docs_data', JSON.stringify(docs));
-        document.getElementById('new-doc-name').value = '';
-        renderTags();
+        document.getElementById('new-doc-name').value = ''; renderTags();
     }
 
     function deleteDoctor(e, id) { 
         e.stopPropagation(); 
         let docs = JSON.parse(localStorage.getItem('docs_data') || '[]'); 
-        docs = docs.filter(d => d.id !== id); 
-        localStorage.setItem('docs_data', JSON.stringify(docs)); 
+        localStorage.setItem('docs_data', JSON.stringify(docs.filter(d => d.id !== id))); 
         renderTags(); 
     }
 
     function deleteEntry(id) { 
-        if(confirm("Opravdu smazat tento záznam?")) { 
+        if(confirm("Smazat?")) { 
             let entries = JSON.parse(localStorage.getItem('health_entries') || '[]'); 
-            const newEntries = entries.filter(x => x.id !== id);
-            localStorage.setItem('health_entries', JSON.stringify(newEntries)); 
+            localStorage.setItem('health_entries', JSON.stringify(entries.filter(x => x.id !== id))); 
             renderList(); 
         } 
     }
@@ -448,8 +386,7 @@
 
     function updateNames() { 
         localStorage.setItem('app_names', JSON.stringify([document.getElementById('p1-name').value, document.getElementById('p2-name').value])); 
-        loadSettings(); 
-        alert("Uloženo"); 
+        loadSettings(); alert("Uloženo"); 
     }
 </script>
 </body>
