@@ -1,19 +1,150 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Zdraví PRO</title>
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#B197FC" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="https://picsum.photos/seed/medical/192/192.png" />
-    <link rel="shortcut icon" href="https://picsum.photos/seed/medical/192/192.png" />
-  </head>
-  <body>
-    <div id="root"></div>
-   <script type="module" src="src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lékařský Zápisník</title>
+    <style>
+        :root { --p: #007bff; --bg: #f8f9fa; --txt: #333; --white: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--txt); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .app-container { width: 100%; max-width: 450px; }
+        
+        .header { text-align: center; margin-bottom: 20px; }
+        .main-btn-area { background: var(--white); padding: 25px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; margin-bottom: 20px; }
+        
+        #btn-record { background: #ff4757; color: white; border: none; width: 70px; height: 70px; border-radius: 50%; font-size: 30px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(255, 71, 87, 0.4); }
+        #btn-record.active { animation: pulse 1.2s infinite; background: #ff6b81; }
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(255, 71, 87, 0); } 100% { transform: scale(1); } }
+        
+        #status { margin-top: 15px; font-weight: 500; color: #555; height: 20px; }
 
+        .card { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); border-left: 5px solid var(--p); position: relative; }
+        .card label { display: block; font-size: 11px; font-weight: bold; color: var(--p); text-transform: uppercase; margin-top: 8px; }
+        .card input { width: 100%; border: 1px solid #eee; padding: 10px; border-radius: 6px; font-size: 15px; box-sizing: border-box; background: #fafafa; margin-top: 3px; }
+        .card input:focus { border-color: var(--p); outline: none; background: #fff; }
+        
+        .row { display: flex; gap: 10px; }
+        .btn-delete { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ddd; font-size: 18px; cursor: pointer; }
+        .btn-delete:hover { color: #ff4757; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h2>🏥 Moje Vyšetření</h2>
+    </div>
+
+    <div class="main-btn-area">
+        <button id="btn-record">🎤</button>
+        <div id="status">Klepni a diktuj</div>
+    </div>
+
+    <div id="list"></div>
+</div>
+
+<script>
+    const btn = document.getElementById('btn-record');
+    const status = document.getElementById('status');
+    const list = document.getElementById('list');
+
+    // Načtení dat
+    let appointments = JSON.parse(localStorage.getItem('my_med_data') || '[]');
+
+    // Nastavení mikrofonu
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRec) {
+        const recognition = new SpeechRec();
+        recognition.lang = 'cs-CZ';
+
+        btn.onclick = () => {
+            try {
+                recognition.start();
+                btn.classList.add('active');
+                status.innerText = "Poslouchám...";
+            } catch(e) { /* už běží */ }
+        };
+
+        recognition.onresult = (e) => {
+            const text = e.results[0][0].transcript;
+            btn.classList.remove('active');
+            status.innerText = "Zpracováno ✓";
+            parseAndAdd(text);
+        };
+
+        recognition.onend = () => btn.classList.remove('active');
+        recognition.onerror = () => {
+            btn.classList.remove('active');
+            status.innerText = "Chyba (zkontroluj HTTPS)";
+        };
+    } else {
+        status.innerText = "Prohlížeč nepodporuje hlas.";
+    }
+
+    function parseAndAdd(text) {
+        // Jednoduchá logika:
+        // Hledáme čas (např. 14:00)
+        const timeMatch = text.match(/(\d{1,2}:\d{2})/);
+        // Hledáme datum (např. 15. března nebo 15.5.)
+        const dateMatch = text.match(/(\d{1,2}\.\s?\d{1,2}\.|\d{1,2}\.\s?[a-záíěéúů]{3,})/i);
+
+        const newApp = {
+            id: Date.now(),
+            name: text.split(' ')[0], // První slovo jako jméno
+            date: dateMatch ? dateMatch[0] : "",
+            time: timeMatch ? timeMatch[0] : "",
+            type: text // Zbytek textu necháme v "druhu vyšetření" pro snadnou editaci
+        };
+
+        appointments.unshift(newApp);
+        save();
+    }
+
+    function edit(id, field, value) {
+        appointments = appointments.map(a => a.id === id ? {...a, [field]: value} : a);
+        localStorage.setItem('my_med_data', JSON.stringify(appointments));
+    }
+
+    function remove(id) {
+        if(confirm('Smazat tento záznam?')) {
+            appointments = appointments.filter(a => a.id !== id);
+            save();
+        }
+    }
+
+    function save() {
+        localStorage.setItem('my_med_data', JSON.stringify(appointments));
+        render();
+    }
+
+    function render() {
+        list.innerHTML = appointments.map(a => `
+            <div class="card">
+                <button class="btn-delete" onclick="remove(${a.id})">✕</button>
+                
+                <label>Pacient</label>
+                <input type="text" value="${a.name}" oninput="edit(${a.id}, 'name', this.value)">
+                
+                <div class="row">
+                    <div style="flex:2">
+                        <label>Datum</label>
+                        <input type="text" value="${a.date}" placeholder="např. 12.10." oninput="edit(${a.id}, 'date', this.value)">
+                    </div>
+                    <div style="flex:1">
+                        <label>Čas</label>
+                        <input type="text" value="${a.time}" placeholder="10:00" oninput="edit(${a.id}, 'time', this.value)">
+                    </div>
+                </div>
+                
+                <label>Vyšetření / Poznámka</label>
+                <input type="text" value="${a.type}" oninput="edit(${a.id}, 'type', this.value)">
+            </div>
+        `).join('');
+    }
+
+    render();
+</script>
+
+</body>
+</html>
