@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-accent: var(--accent);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-border: var(--border-color);
+
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+:root {
+  /* Updated to match image: Purple/Lavender theme */
+  --bg: #0A0A0B;
+  --surface: #141416;
+  --surface-alt: #1D1D21;
+  --accent: #B197FC; /* Soft Purple from image */
+  --ink-primary: #FFFFFF;
+  --ink-secondary: #8E8E93;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --neu-shadow-light: rgba(255, 255, 255, 0.05);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] {
+  --bg: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-alt: #F0F0F2;
+  --accent: #7C3AED; /* Deeper purple for light mode */
+  --ink-primary: #1D1D1F;
+  --ink-secondary: #86868B;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --neu-shadow-light: rgba(255, 255, 255, 1);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.1);
+}
+
+/* NEUMORPHIC OVERRIDES */
+[data-style="neu"] {
+  --border-color: transparent;
+}
+
+[data-style="neu"][data-theme="dark"] {
+  --bg: #1e2124;
+  --surface: #1e2124;
+  --surface-alt: #1a1c1e;
+  --neu-shadow-light: #2a2e33;
+  --neu-shadow-dark: #121416;
+}
+
+[data-style="neu"][data-theme="light"] {
+  --bg: #e0e5ec;
+  --surface: #e0e5ec;
+  --surface-alt: #d1d9e6;
+  --neu-shadow-light: #ffffff;
+  --neu-shadow-dark: #a3b1c6;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink-primary);
+  font-family: var(--font-sans);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
+}
+
+/* Fix for native input icons in Dark Mode (Chrome/Safari/iOS) */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(1); /* Default dark mode icons to white */
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none; /* Keep original black for light mode */
+}
+
+.panel-card {
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 24px; /* More rounded like the image */
+  transition: all 0.4s ease;
+}
+
+[data-style="neu"] .panel-card {
+  box-shadow: 8px 8px 16px var(--neu-shadow-dark), -8px -8px 16px var(--neu-shadow-light);
+  border: none;
+}
+
+.input-field {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-color);
+  color: var(--ink-primary);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+[data-style="neu"] .input-field {
+  box-shadow: inset 4px 4px 8px var(--neu-shadow-dark), inset -4px -4px 8px var(--neu-shadow-light);
+  border: none;
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+[data-style="neu"] .btn-primary {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 4px 4px 8px var(--neu-shadow-dark), -4px -4px 8px var(--neu-shadow-light);
+}
+
+[data-style="neu"] .btn-primary:active {
+  box-shadow: inset 2px 2px 5px var(--neu-shadow-dark), inset -2px -2px 5px var(--neu-shadow-light);
+  transform: scale(0.98);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* Custom Scrollbar for Dark Mode */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-alt);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-secondary);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

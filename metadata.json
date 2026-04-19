@@ -1,0 +1,6 @@
+{
+  "name": "Zdraví PRO",
+  "description": "Profesionální deník zdraví pro sledování návštěv lékařů a správy zdravotních záznamů s podporou notifikací a sdílení.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": []
+}
